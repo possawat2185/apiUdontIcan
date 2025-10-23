@@ -6,21 +6,17 @@ export interface IUser extends Document {
     phone: string;
     password?: string;
     name: string;
-    profileImage?: string;
-    addressText?: string;
-    gps?: {
-        lat: number;
-        lng: number;
-    };
+    profileImage: string;
+    // --- เปลี่ยนแปลงตรงนี้ ---
+    addresses: mongoose.Schema.Types.ObjectId[]; // เก็บ ID ของที่อยู่ทั้งหมด
+    // ---
     createdAt: Date;
     updatedAt: Date;
 }
 
 const userSchema: Schema = new Schema(
     {
-        _id: {
-            type: String,
-        },
+        _id: { type: String },
         phone: {
             type: String,
             required: [true, 'Phone number is required'],
@@ -41,33 +37,31 @@ const userSchema: Schema = new Schema(
             type: String,
             default: ''
         },
-        addressText: {
-            type: String,
-            default: ''
-        },
-        gps: {
-            lat: { type: Number },
-            lng: { type: Number },
-        },
+        // --- ลบ addressText และ gps เก่าออก ---
+        
+        // --- เพิ่ม Array นี้เพื่ออ้างอิง Address model ---
+        addresses: [{
+            type: mongoose.Schema.Types.ObjectId, // ใช้ ObjectId เริ่มต้นของ Mongoose
+            ref: 'Address' // อ้างอิงไปยัง 'Address' model ใหม่
+        }]
     },
     {
         timestamps: true,
-        versionKey: false
+        versionKey: false,
+        collection: 'users' // ระบุชื่อ collection ให้ชัดเจน
     }
 );
 
-// Mongoose Pre-save Hook สำหรับ 'User'
+// Mongoose Pre-save Hook สำหรับ 'User' (ยังทำงานเหมือนเดิม)
 userSchema.pre<IUser>('save', async function (next) {
     if (this.isNew) {
         try {
             const counter = await Counter.findByIdAndUpdate(
-                { _id: 'userId' }, // ใช้ counter 'userId'
+                { _id: 'userId' },
                 { $inc: { seq: 1 } },
                 { new: true, upsert: true }
             );
-
-            const formattedId = 'UID' + String(counter.seq).padStart(6, '0');
-            this._id = formattedId;
+            this._id = 'UID' + String(counter.seq).padStart(6, '0');
             next();
         } catch (error: any) {
             next(error);
@@ -77,6 +71,4 @@ userSchema.pre<IUser>('save', async function (next) {
     }
 });
 
-
 export default mongoose.model<IUser>('User', userSchema);
-

@@ -3,6 +3,7 @@ import { router as userRoutes } from "./routes/users.routes";
 import { router as uploadRoutes } from "./routes/upload.routes";
 import { router as raiderRoutes } from "./routes/raider.routes";
 import { router as deliveryJobRoutes } from "./routes/deliveryJob.route";
+import { router as addressRoutes } from "./routes/address.route";
 import bodyParser from "body-parser";
 import cors from "cors";
 
@@ -18,4 +19,5 @@ app.get("/", (req:Request, res:Response) => {
 app.use("/users", userRoutes);
 app.use("/raiders", raiderRoutes);
 app.use("/jobs", deliveryJobRoutes)
+app.use("/addresses", addressRoutes)
 app.use("/uploads", uploadRoutes);
