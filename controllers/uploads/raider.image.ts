@@ -47,7 +47,8 @@ router.post(
         res.status(400).json({ message: "No file uploaded" });
         return;
       }
-      const uniqueFilename = `RID${Date.now()}-${uuidv4()}}`;
+      const raiderName = req.body.raiderName;
+      const uniqueFilename = `RID${Date.now()}-${raiderName}}`;
       const storageRef = ref(storage, `images/raiders/profiles/${uniqueFilename}`);
       const metadata = {
         contentType: file.mimetype,

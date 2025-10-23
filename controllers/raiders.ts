@@ -1,27 +1,57 @@
 import { Request, Response } from 'express';
-import Raider from '../models/Raider.model';
+import Raider, { IRaider } from '../models/Raider.model';
+import mongoose from 'mongoose';
 
 // --- สมัครสมาชิก Raider ใหม่ (Register Raider) ---
 // POST /api/raiders/register
-export const registerRaider = async (req: Request, res: Response) => {
-    try {
-        const { phone, password, name, licensePlate } = req.body;
+export const createRaider = async (
+    req: Request,
+    res: Response
+): Promise<void> => {
+    // 1. ดึงข้อมูล
+    const { phone, password, name, licensePlate, profileImage, vehicleImage } = req.body;
 
-        if (!phone || !password || !name || !licensePlate) {
-            return res.status(400).json({ message: 'Please provide all required fields' });
-        }
+    // 2. ตรวจสอบข้อมูลที่จำเป็น
+    if (!phone || !password || !name || !licensePlate) {
+        res.status(400).json({ message: "Phone, password, name, and licensePlate are required" });
+        return;
+    }
+
+    try {
+        // 3. เช็คว่ามีเบอร์โทรนี้ในระบบหรือยัง
         const raiderExists = await Raider.findOne({ phone });
         if (raiderExists) {
-            return res.status(400).json({ message: 'This phone number is already registered' });
+            res.status(400).json({ message: "Raider with this phone number already exists" });
+            return;
         }
-        const newRaider = new Raider({ phone, password, name, licensePlate });
-        await newRaider.save();
 
-        const raiderResponse = newRaider.toObject();
-        delete raiderResponse.password;
-        res.status(201).json({ message: 'Raider registered successfully', raider: raiderResponse });
+        // 4. สร้าง Raider ใหม่ (ID จะถูกสร้างโดย pre-save hook)
+        // ในระบบจริง ควรเข้ารหัส password ก่อนบันทึก
+        const newRaider = new Raider({
+            phone,
+            password, // ควร hash ก่อนบันทึก
+            name,
+            licensePlate,
+            profileImage: profileImage || '', // ใส่ค่า default
+            vehicleImage: vehicleImage || '' // ใส่ค่า default
+        });
+
+        // 5. บันทึกและส่งข้อมูลที่สร้างเสร็จกลับไป
+        const createdRaider: IRaider = await newRaider.save();
+
+        // ไม่ส่งรหัสผ่านกลับไปใน response
+        const responseRaider = createdRaider.toObject();
+        delete responseRaider.password;
+
+        res.status(201).json(responseRaider);
+
     } catch (error: any) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        // จัดการ Validation Error และ Error อื่นๆ
+        if (error instanceof mongoose.Error.ValidationError) {
+            res.status(400).json({ message: 'Validation Error', errors: error.errors });
+        } else {
+            res.status(500).json({ message: "Server error creating raider", error: error.message });
+        }
     }
 };
 
