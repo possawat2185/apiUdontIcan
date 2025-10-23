@@ -39,7 +39,7 @@ export const createUser = async (
   res: Response
 ): Promise<void> => {
   // ดึงข้อมูลทั้งหมดที่จำเป็นจาก request body
-  const { phone, password, name, profileImage, addressText, gps } = req.body;
+  const { phone, password, name, profileImage } = req.body;
 
   // ตรวจสอบข้อมูลที่จำเป็น
   if (!phone || !password || !name) {
