@@ -63,8 +63,6 @@ export const createUser = async (
       password,
       name,
       profileImage,
-      addressText,
-      gps,
     });
     const createdUser: IUser = await newUser.save();
     res.status(201).json(createdUser);
