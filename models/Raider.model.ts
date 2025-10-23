@@ -22,7 +22,7 @@ export interface IRaider extends Document {
 
 // --- Mongoose Schema ---
 const RaiderSchema: Schema = new Schema({
-    _id: { type: String, required: true },
+    _id: { type: String },
     phone: {
         type: String,
         required: [true, 'Phone number is required'],
