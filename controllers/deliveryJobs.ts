@@ -3,7 +3,21 @@ import mongoose from 'mongoose';
 import DeliveryJob, { DeliveryStatus, IDeliveryJob } from '../models/DeliveryJob.model'; // อัปเดต import
 import Rider from '../models/Rider.model';
 import User from '../models/User.model';
-import Address from '../models/Address.model';
+import Address, { IAddress } from '../models/Address.model';
+
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371; // รัศมีของโลก หน่วยเป็นกิโลเมตร
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c; // ระยะทาง หน่วยเป็นกิโลเมตร
+    return distance;
+}
+
 
 // --- สร้างงานส่งของใหม่ ---
 // POST /api/delivery-jobs
@@ -19,9 +33,10 @@ export const createJob = async (req: Request, res: Response): Promise<void> => {
 
     try {
         // ตรวจสอบว่ามี User และ Address อยู่จริง
+        // ใช้ Type Assertion เพื่อบอก TypeScript ว่าผลลัพธ์จะเป็น IAddress (ถ้าไม่ null)
         const senderUser = await User.findById(sender);
-        const pickupAddress = await Address.findById(pickupAddressId);
-        const dropoffAddress = await Address.findById(dropoffAddressId);
+        const pickupAddress = await Address.findById(pickupAddressId) as IAddress | null;
+        const dropoffAddress = await Address.findById(dropoffAddressId) as IAddress | null;
         // ค้นหา Receiver User (ถ้ามี)
         const receiverUser = await User.findOne({ phone: receiverPhone });
 
@@ -33,7 +48,12 @@ export const createJob = async (req: Request, res: Response): Promise<void> => {
         // --- สิ้นสุดการตรวจสอบ ---
 
         if (!senderUser || !pickupAddress || !dropoffAddress) {
-            res.status(404).json({ message: "Sender, Pickup Address, or Dropoff Address not found" });
+            // ปรับปรุงข้อความ Error ให้ชัดเจนขึ้น
+            let notFound = [];
+            if (!senderUser) notFound.push("Sender");
+            if (!pickupAddress) notFound.push("Pickup Address");
+            if (!dropoffAddress) notFound.push("Dropoff Address");
+            res.status(404).json({ message: `${notFound.join(', ')} not found` });
             return;
         }
 
@@ -43,22 +63,30 @@ export const createJob = async (req: Request, res: Response): Promise<void> => {
              return;
         }
         // ตรวจสอบว่าที่อยู่ปลายทางเป็นของผู้รับ (ถ้าผู้รับมีบัญชี)
-        // เนื่องจากเราเช็ค receiverUser ข้างบนแล้ว ตรงนี้จะทำงานเมื่อ receiverUser ไม่ใช่ null เท่านั้น
         if (dropoffAddress.user.toString() !== receiverUser._id.toString()) {
             res.status(403).json({ message: "Dropoff address does not belong to the receiver" });
              return;
         }
 
+        // --- คำนวณระยะทาง ---
+        const distanceKm = calculateDistance(
+            pickupAddress.gps.lat,
+            pickupAddress.gps.lng,
+            dropoffAddress.gps.lat,
+            dropoffAddress.gps.lng
+        );
+        // ---
 
         const newJob = new DeliveryJob({
             sender,
             receiverPhone,
             receiver: receiverUser._id, // เก็บ ID ถ้าเจอ User (ตอนนี้จะเจอเสมอ)
-            pickupAddressId: pickupAddressId, // <-- ใช้ ID ที่ส่งมา
-            dropoffAddressId: dropoffAddressId, // <-- ใช้ ID ที่ส่งมา
+            pickupAddressId: pickupAddressId,
+            dropoffAddressId: dropoffAddressId,
             status: DeliveryStatus.PENDING,
-            pickupImage: pickupImage || '', // รับรูปภาพตอนสร้างงาน
-            itemName: itemName
+            pickupImage: pickupImage || '',
+            itemName: itemName,
+            distance: distanceKm // <-- บันทึกระยะทาง
         });
 
         const savedJob: IDeliveryJob = await newJob.save();
@@ -74,7 +102,10 @@ export const createJob = async (req: Request, res: Response): Promise<void> => {
         // จัดการ CastError สำหรับ ID ต่างๆ
         if (error instanceof mongoose.Error.CastError) {
              res.status(400).json({ message: `Invalid ID format for ${error.path}` });
-        } else {
+        } else if (error instanceof mongoose.Error.ValidationError) {
+             res.status(400).json({ message: 'Validation Error', errors: error.errors });
+        }
+        else {
              res.status(500).json({ message: "Server error creating job", error: error.message });
         }
     }

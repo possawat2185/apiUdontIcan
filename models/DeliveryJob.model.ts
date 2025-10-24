@@ -16,15 +16,14 @@ export interface IDeliveryJob extends Document {
     receiverPhone: string; // เก็บเบอร์โทรไว้ค้นหา/แจ้งเตือน
     receiver?: string; // Ref to User's _id (UID), optional
     rider?: string; // Ref to Rider's _id (RID), optional
-    // --- เปลี่ยนกลับเป็น ID ---
     pickupAddressId: mongoose.Schema.Types.ObjectId; // Ref to Address's _id
     dropoffAddressId: mongoose.Schema.Types.ObjectId; // Ref to Address's _id
-    // ---
     status: DeliveryStatus;
-    itemName: string; // เพิ่ม field นี้ตามที่คุยกันก่อนหน้า
+    itemName: string;
     pickupImage?: string;
     inTransitImage?: string;
     deliveredImage?: string;
+    distance?: number; // <-- เพิ่มฟิลด์ distance (ระยะทาง)
     createdAt: Date;
     updatedAt: Date;
 }
@@ -34,29 +33,28 @@ const deliveryJobSchema: Schema = new Schema(
         _id: { type: String },
         sender: { type: String, ref: 'User', required: true },
         receiverPhone: { type: String, required: true },
-        receiver: { type: String, ref: 'User' }, // หา User จาก receiverPhone แล้วบันทึก ID ถ้าเจอ
+        receiver: { type: String, ref: 'User' },
         rider: { type: String, ref: 'Rider', default: null },
-        // --- เปลี่ยนกลับเป็น ID และอ้างอิง Address Model ---
         pickupAddressId: {
-            type: Schema.Types.ObjectId, // ใช้ ObjectId
-            ref: 'Address', // อ้างอิง Address model
+            type: Schema.Types.ObjectId,
+            ref: 'Address',
             required: true
         },
         dropoffAddressId: {
-            type: Schema.Types.ObjectId, // ใช้ ObjectId
-            ref: 'Address', // อ้างอิง Address model
+            type: Schema.Types.ObjectId,
+            ref: 'Address',
             required: true
         },
-        // ---
         status: {
             type: String,
             enum: Object.values(DeliveryStatus),
             default: DeliveryStatus.PENDING,
         },
-        itemName: { type: String, required: true }, // เพิ่ม field นี้
-        pickupImage: { type: String, default: '' }, // กำหนด default
-        inTransitImage: { type: String, default: '' }, // กำหนด default
-        deliveredImage: { type: String, default: '' }, // กำหนด default
+        itemName: { type: String, required: true },
+        pickupImage: { type: String, default: '' },
+        inTransitImage: { type: String, default: '' },
+        deliveredImage: { type: String, default: '' },
+        distance: { type: Number, default: 0.0 } // <-- เพิ่มฟิลด์ distance ใน Schema
     },
     {
         timestamps: true,
@@ -74,8 +72,7 @@ deliveryJobSchema.pre<IDeliveryJob>('save', async function (next) {
                 { $inc: { seq: 1 } },
                 { new: true, upsert: true }
             );
-            // เปลี่ยน Prefix เป็น JOB ตาม Model ล่าสุด
-            this._id = 'JOB' + String(counter.seq).padStart(6, '0'); 
+            this._id = 'JOB' + String(counter.seq).padStart(6, '0');
             next();
         } catch (error: any) {
             next(error);
@@ -86,4 +83,3 @@ deliveryJobSchema.pre<IDeliveryJob>('save', async function (next) {
 });
 
 export default mongoose.model<IDeliveryJob>('DeliveryJob', deliveryJobSchema);
-
