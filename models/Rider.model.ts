@@ -1,8 +1,8 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import Counter from './Counter.model'; // 1. Import Counter model โดยตรง
 
-// --- Raider Interface for TypeScript ---
-export interface IRaider extends Document {
+// --- Rider Interface for TypeScript ---
+export interface IRider extends Document {
     _id: string;
     phone: string;
     password?: string;
@@ -21,7 +21,7 @@ export interface IRaider extends Document {
 }
 
 // --- Mongoose Schema ---
-const RaiderSchema: Schema = new Schema({
+const RiderSchema: Schema = new Schema({
     _id: { type: String },
     phone: {
         type: String,
@@ -79,10 +79,10 @@ const RaiderSchema: Schema = new Schema({
 });
 
 // สร้าง Index สำหรับ Geospatial queries
-RaiderSchema.index({ currentLocation: '2dsphere' });
+RiderSchema.index({ currentLocation: '2dsphere' });
 
 // 3. อัปเดต Middleware ให้ใช้ findByIdAndUpdate เพื่อความปลอดภัย
-RaiderSchema.pre<IRaider>('save', async function (next) {
+RiderSchema.pre<IRider>('save', async function (next) {
     if (this.isNew) {
         try {
             const counter = await Counter.findByIdAndUpdate(
@@ -101,4 +101,4 @@ RaiderSchema.pre<IRaider>('save', async function (next) {
     }
 });
 
-export default mongoose.model<IRaider>('Raider', RaiderSchema);
+export default mongoose.model<IRider>('Rider', RiderSchema);

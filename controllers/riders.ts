@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
-import Raider, { IRaider } from '../models/Raider.model';
+import Rider, { IRider } from '../models/Rider.model';
 import mongoose from 'mongoose';
 
-// --- สมัครสมาชิก Raider ใหม่ (Register Raider) ---
-// POST /api/raiders/register
-export const createRaider = async (
+// --- สมัครสมาชิก Rider ใหม่ (Register Rider) ---
+// POST /api/riders/register
+export const createRider = async (
     req: Request,
     res: Response
 ): Promise<void> => {
@@ -19,15 +19,15 @@ export const createRaider = async (
 
     try {
         // 3. เช็คว่ามีเบอร์โทรนี้ในระบบหรือยัง
-        const raiderExists = await Raider.findOne({ phone });
-        if (raiderExists) {
-            res.status(400).json({ message: "Raider with this phone number already exists" });
+        const riderExists = await Rider.findOne({ phone });
+        if (riderExists) {
+            res.status(400).json({ message: "Rider with this phone number already exists" });
             return;
         }
 
-        // 4. สร้าง Raider ใหม่ (ID จะถูกสร้างโดย pre-save hook)
+        // 4. สร้าง Rider ใหม่ (ID จะถูกสร้างโดย pre-save hook)
         // ในระบบจริง ควรเข้ารหัส password ก่อนบันทึก
-        const newRaider = new Raider({
+        const newRider = new Rider({
             phone,
             password, // ควร hash ก่อนบันทึก
             name,
@@ -37,96 +37,96 @@ export const createRaider = async (
         });
 
         // 5. บันทึกและส่งข้อมูลที่สร้างเสร็จกลับไป
-        const createdRaider: IRaider = await newRaider.save();
+        const createdRider: IRider = await newRider.save();
 
         // ไม่ส่งรหัสผ่านกลับไปใน response
-        const responseRaider = createdRaider.toObject();
-        delete responseRaider.password;
+        const responseRider = createdRider.toObject();
+        delete responseRider.password;
 
-        res.status(201).json(responseRaider);
+        res.status(201).json(responseRider);
 
     } catch (error: any) {
         // จัดการ Validation Error และ Error อื่นๆ
         if (error instanceof mongoose.Error.ValidationError) {
             res.status(400).json({ message: 'Validation Error', errors: error.errors });
         } else {
-            res.status(500).json({ message: "Server error creating raider", error: error.message });
+            res.status(500).json({ message: "Server error creating rider", error: error.message });
         }
     }
 };
 
-// --- Login สำหรับ Raider (แบบง่าย) ---
-// POST /api/raiders/login
-export const loginRaider = async (req: Request, res: Response) => {
+// --- Login สำหรับ Rider (แบบง่าย) ---
+// POST /api/riders/login
+export const loginRider = async (req: Request, res: Response) => {
     try {
         const { phone, password } = req.body;
         if (!phone || !password) {
             return res.status(400).json({ message: 'Please provide both phone and password' });
         }
-        const raider = await Raider.findOne({ phone }).select('+password');
-        if (!raider || raider.password !== password) {
+        const rider = await Rider.findOne({ phone }).select('+password');
+        if (!rider || rider.password !== password) {
             return res.status(401).json({ message: 'Phone number or password incorrect' });
         }
-        res.status(200).json({ message: 'Login successful', raiderId: raider._id });
+        res.status(200).json({ message: 'Login successful', riderId: rider._id });
     } catch (error: any) {
         res.status(500).json({ message: 'Server error' });
     }
 };
 
 // --- GET: ดูข้อมูลไรเดอร์ทั้งหมด ---
-// GET /api/raiders
-export const getRaiders = async (req: Request, res: Response) => {
+// GET /api/riders
+export const getRiders = async (req: Request, res: Response) => {
     try {
-        const raiders = await Raider.find();
-        res.status(200).json(raiders);
+        const riders = await Rider.find();
+        res.status(200).json(riders);
     } catch (error: any) {
         res.status(500).json({ message: 'Server error' });
     }
 };
 
 // --- GET: ดูข้อมูลไรเดอร์รายบุคคลด้วย ID ---
-// GET /api/raiders/:id
-export const getRaiderById = async (req: Request, res: Response) => {
+// GET /api/riders/:id
+export const getRiderById = async (req: Request, res: Response) => {
     try {
-        const raider = await Raider.findById(req.params.id);
-        if (!raider) {
-            return res.status(404).json({ message: 'Raider not found' });
+        const rider = await Rider.findById(req.params.id);
+        if (!rider) {
+            return res.status(404).json({ message: 'Rider not found' });
         }
-        res.status(200).json(raider);
+        res.status(200).json(rider);
     } catch (error: any) {
         res.status(500).json({ message: 'Server error' });
     }
 };
 
 // --- UPDATE: แก้ไขข้อมูลไรเดอร์ ---
-// PUT /api/raiders/:id
-export const updateRaider = async (req: Request, res: Response) => {
+// PUT /api/riders/:id
+export const updateRider = async (req: Request, res: Response) => {
     try {
         const { name, licensePlate, status } = req.body;
-        const raider = await Raider.findByIdAndUpdate(
+        const rider = await Rider.findByIdAndUpdate(
             req.params.id,
             { name, licensePlate, status },
             { new: true } // { new: true } เพื่อให้ส่งข้อมูลที่อัปเดตแล้วกลับไป
         );
 
-        if (!raider) {
-            return res.status(404).json({ message: 'Raider not found' });
+        if (!rider) {
+            return res.status(404).json({ message: 'Rider not found' });
         }
-        res.status(200).json({ message: 'Raider updated successfully', raider });
+        res.status(200).json({ message: 'Rider updated successfully', rider });
     } catch (error: any) {
         res.status(500).json({ message: 'Server error' });
     }
 };
 
 // --- DELETE: ลบข้อมูลไรเดอร์ ---
-// DELETE /api/raiders/:id
-export const deleteRaider = async (req: Request, res: Response) => {
+// DELETE /api/riders/:id
+export const deleteRider = async (req: Request, res: Response) => {
     try {
-        const raider = await Raider.findByIdAndDelete(req.params.id);
-        if (!raider) {
-            return res.status(404).json({ message: 'Raider not found' });
+        const rider = await Rider.findByIdAndDelete(req.params.id);
+        if (!rider) {
+            return res.status(404).json({ message: 'Rider not found' });
         }
-        res.status(200).json({ message: 'Raider deleted successfully' });
+        res.status(200).json({ message: 'Rider deleted successfully' });
     } catch (error: any) {
         res.status(500).json({ message: 'Server error' });
     }

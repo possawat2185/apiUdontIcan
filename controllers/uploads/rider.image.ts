@@ -33,7 +33,7 @@ const fileupload = multer({
 })
 
 router.get("/", (req, res) => {
-  res.send("Upload raider worked");
+  res.send("Upload rider worked");
 });
 
 
@@ -47,9 +47,9 @@ router.post(
         res.status(400).json({ message: "No file uploaded" });
         return;
       }
-      const raiderName = req.body.raiderName;
-      const uniqueFilename = `RID${Date.now()}-${raiderName}}`;
-      const storageRef = ref(storage, `images/raiders/profiles/${uniqueFilename}`);
+      const riderName = req.body.riderName;
+      const uniqueFilename = `RID${Date.now()}-${riderName}}`;
+      const storageRef = ref(storage, `images/riders/profiles/${uniqueFilename}`);
       const metadata = {
         contentType: file.mimetype,
       };
@@ -62,12 +62,12 @@ router.post(
       const downloadURL = await getDownloadURL(snapshot.ref);
 
       return res.status(200).json({
-        message: "File uploaded raiders successfully",
+        message: "File uploaded riders successfully",
         fileName: uniqueFilename,
         url: downloadURL,
       });
     } catch (error: any) {
-      console.error("Error uploading file raiders:", error);
+      console.error("Error uploading file riders:", error);
       return res.status(500).json({ message: error.message });
     }
   }
@@ -82,7 +82,7 @@ router.post("/vehicle", fileupload.single("file"), async (req: Request, res: Res
     }
     const licensePlate = req.body.licensePlate;
     const uniqueFilename = `Vehicle${Date.now()}-${licensePlate}`;
-    const storageRef = ref(storage, `images/raiders/vehicles/${uniqueFilename}`);
+    const storageRef = ref(storage, `images/riders/vehicles/${uniqueFilename}`);
     const metadata = {
         contentType: file.mimetype,
     };
@@ -94,13 +94,13 @@ router.post("/vehicle", fileupload.single("file"), async (req: Request, res: Res
     const downloadURL = await getDownloadURL(snapshot.ref);
 
     return res.status(200).json({
-      message: "vehicle file uploaded raiders successfully",
+      message: "vehicle file uploaded riders successfully",
       fileName: uniqueFilename,
       url: downloadURL,
     });
   }
     catch (error: any) {
-    console.error("Error uploading vehicle file raiders:", error);
+    console.error("Error uploading vehicle file riders:", error);
     return res.status(500).json({ message: error.message });
   }
 });

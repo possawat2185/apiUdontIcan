@@ -15,7 +15,7 @@ export interface IDeliveryJob extends Document {
     sender: string; // Ref to User's _id (UID)
     receiverPhone: string; // เก็บเบอร์โทรไว้ค้นหา/แจ้งเตือน
     receiver?: string; // Ref to User's _id (UID), optional
-    rider?: string; // Ref to Raider's _id (RID), optional
+    rider?: string; // Ref to Rider's _id (RID), optional
     // --- เปลี่ยนกลับเป็น ID ---
     pickupAddressId: mongoose.Schema.Types.ObjectId; // Ref to Address's _id
     dropoffAddressId: mongoose.Schema.Types.ObjectId; // Ref to Address's _id
@@ -35,7 +35,7 @@ const deliveryJobSchema: Schema = new Schema(
         sender: { type: String, ref: 'User', required: true },
         receiverPhone: { type: String, required: true },
         receiver: { type: String, ref: 'User' }, // หา User จาก receiverPhone แล้วบันทึก ID ถ้าเจอ
-        rider: { type: String, ref: 'Raider', default: null },
+        rider: { type: String, ref: 'Rider', default: null },
         // --- เปลี่ยนกลับเป็น ID และอ้างอิง Address Model ---
         pickupAddressId: {
             type: Schema.Types.ObjectId, // ใช้ ObjectId

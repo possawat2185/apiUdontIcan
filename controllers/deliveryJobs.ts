@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import DeliveryJob, { DeliveryStatus, IDeliveryJob } from '../models/DeliveryJob.model'; // อัปเดต import
-import Raider from '../models/Raider.model';
+import Rider from '../models/Rider.model';
 
 // --- สร้างงานส่งของใหม่ ---
 // POST /api/delivery-jobs
@@ -49,10 +49,10 @@ export const getAvailableJobs = async (req: Request, res: Response): Promise<voi
 // PUT /api/delivery-jobs/:jobId/accept
 export const acceptJob = async (req: Request, res: Response): Promise<void> => {
     const { jobId } = req.params;
-    const { raiderId } = req.body; // ในระบบจริงควรดึงมาจาก JWT Token
+    const { riderId } = req.body; // ในระบบจริงควรดึงมาจาก JWT Token
 
-    if (!raiderId) {
-        res.status(400).json({ message: "Raider ID is required" });
+    if (!riderId) {
+        res.status(400).json({ message: "Rider ID is required" });
         return;
     }
 
@@ -62,7 +62,7 @@ export const acceptJob = async (req: Request, res: Response): Promise<void> => {
     try {
         const job = await DeliveryJob.findOneAndUpdate(
             { _id: jobId, status: DeliveryStatus.PENDING }, // <-- ใช้ Enum
-            { $set: { status: DeliveryStatus.ACCEPTED, rider: raiderId } }, // <-- เปลี่ยนเป็น rider และใช้ Enum
+            { $set: { status: DeliveryStatus.ACCEPTED, rider: riderId } }, // <-- เปลี่ยนเป็น rider และใช้ Enum
             { new: true, session }
         );
 
@@ -73,7 +73,7 @@ export const acceptJob = async (req: Request, res: Response): Promise<void> => {
             return;
         }
 
-        await Raider.findByIdAndUpdate(raiderId,
+        await Rider.findByIdAndUpdate(riderId,
             { $set: { status: 'on_job', currentJobId: jobId } },
             { session }
         );
@@ -94,7 +94,7 @@ export const acceptJob = async (req: Request, res: Response): Promise<void> => {
 // PUT /api/delivery-jobs/:jobId/status
 export const updateJobStatus = async (req: Request, res: Response): Promise<void> => {
     const { jobId } = req.params;
-    const { newStatus, imageUrl, raiderId } = req.body; // raiderId ควรมาจาก Token
+    const { newStatus, imageUrl, riderId } = req.body; // riderId ควรมาจาก Token
 
     try {
         const job: IDeliveryJob | null = await DeliveryJob.findById(jobId);
@@ -103,7 +103,7 @@ export const updateJobStatus = async (req: Request, res: Response): Promise<void
             return;
         }
 
-        if (job.rider?.toString() !== raiderId) { // <-- เปลี่ยนเป็น rider
+        if (job.rider?.toString() !== riderId) { // <-- เปลี่ยนเป็น rider
              res.status(403).json({ message: "Forbidden: You are not assigned to this job" });
              return;
         }
@@ -114,7 +114,7 @@ export const updateJobStatus = async (req: Request, res: Response): Promise<void
         }
         if (newStatus === DeliveryStatus.DELIVERED && imageUrl) {
             job.deliveredImage = imageUrl; // <-- เปลี่ยนชื่อฟิลด์
-            await Raider.findByIdAndUpdate(raiderId, { $set: { status: 'available', currentJobId: undefined } });
+            await Rider.findByIdAndUpdate(riderId, { $set: { status: 'available', currentJobId: undefined } });
         }
 
         const updatedJob = await job.save();
