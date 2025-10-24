@@ -4,6 +4,7 @@ import {
   createJob,
   getAvailableJobs,
   getJobDetails,
+  getSenderJobs,
   updateJobStatus,
 } from "../controllers/deliveryJobs";
 
@@ -18,3 +19,5 @@ router.get("/:jobId", getJobDetails);
 router.put("/:jobId/accept", acceptJob);
 
 router.put("/:jobId/status", updateJobStatus);
+
+router.get("/sender/:userId", getSenderJobs);

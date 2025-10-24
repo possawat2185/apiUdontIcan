@@ -1,36 +1,30 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import Counter from './Counter.model';
 
-// Enum สำหรับสถานะของสินค้า
+// Enum สำหรับสถานะของสินค้า (เหมือนเดิม)
 export enum DeliveryStatus {
-    PENDING = 'pending', // [1] รอไรเดอร์มารับสินค้า
-    ACCEPTED = 'accepted', // [2] ไรเดอร์รับงาน
-    IN_TRANSIT = 'in_transit', // [3] ไรเดอร์รับสินค้าแล้ว
-    DELIVERED = 'delivered', // [4] นำส่งสินค้าแล้ว
-}
-
-// Interface สำหรับข้อมูลที่อยู่
-interface IAddressInfo {
-    addressText: string;
-    gps: {
-        lat: number;
-        lng: number;
-    };
+    PENDING = 'pending',
+    ACCEPTED = 'accepted',
+    IN_TRANSIT = 'in_transit',
+    DELIVERED = 'delivered',
 }
 
 // Interface สำหรับงานส่งของ
 export interface IDeliveryJob extends Document {
     _id: string; // JOB000001
     sender: string; // Ref to User's _id (UID)
-    receiverPhone: string;
+    receiverPhone: string; // เก็บเบอร์โทรไว้ค้นหา/แจ้งเตือน
     receiver?: string; // Ref to User's _id (UID), optional
     rider?: string; // Ref to Raider's _id (RID), optional
-    pickupAddress: IAddressInfo;
-    dropoffAddress: IAddressInfo;
+    // --- เปลี่ยนกลับเป็น ID ---
+    pickupAddressId: mongoose.Schema.Types.ObjectId; // Ref to Address's _id
+    dropoffAddressId: mongoose.Schema.Types.ObjectId; // Ref to Address's _id
+    // ---
     status: DeliveryStatus;
-    pickupImage?: string; // รูปตอนสถานะ [1]
-    inTransitImage?: string; // รูปตอนสถานะ [3]
-    deliveredImage?: string; // รูปตอนสถานะ [4]
+    itemName: string; // เพิ่ม field นี้ตามที่คุยกันก่อนหน้า
+    pickupImage?: string;
+    inTransitImage?: string;
+    deliveredImage?: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -40,30 +34,29 @@ const deliveryJobSchema: Schema = new Schema(
         _id: { type: String },
         sender: { type: String, ref: 'User', required: true },
         receiverPhone: { type: String, required: true },
-        receiver: { type: String, ref: 'User' },
+        receiver: { type: String, ref: 'User' }, // หา User จาก receiverPhone แล้วบันทึก ID ถ้าเจอ
         rider: { type: String, ref: 'Raider', default: null },
-        pickupAddress: {
-            addressText: { type: String, required: true },
-            gps: {
-                lat: { type: Number, required: true },
-                lng: { type: Number, required: true },
-            },
+        // --- เปลี่ยนกลับเป็น ID และอ้างอิง Address Model ---
+        pickupAddressId: {
+            type: Schema.Types.ObjectId, // ใช้ ObjectId
+            ref: 'Address', // อ้างอิง Address model
+            required: true
         },
-        dropoffAddress: {
-            addressText: { type: String, required: true },
-            gps: {
-                lat: { type: Number, required: true },
-                lng: { type: Number, required: true },
-            },
+        dropoffAddressId: {
+            type: Schema.Types.ObjectId, // ใช้ ObjectId
+            ref: 'Address', // อ้างอิง Address model
+            required: true
         },
+        // ---
         status: {
             type: String,
             enum: Object.values(DeliveryStatus),
             default: DeliveryStatus.PENDING,
         },
-        pickupImage: { type: String },
-        inTransitImage: { type: String },
-        deliveredImage: { type: String },
+        itemName: { type: String, required: true }, // เพิ่ม field นี้
+        pickupImage: { type: String, default: '' }, // กำหนด default
+        inTransitImage: { type: String, default: '' }, // กำหนด default
+        deliveredImage: { type: String, default: '' }, // กำหนด default
     },
     {
         timestamps: true,
@@ -72,7 +65,7 @@ const deliveryJobSchema: Schema = new Schema(
     }
 );
 
-// Pre-save Hook สำหรับสร้าง Job ID
+// Pre-save Hook สำหรับสร้าง Job ID (เหมือนเดิม)
 deliveryJobSchema.pre<IDeliveryJob>('save', async function (next) {
     if (this.isNew) {
         try {
@@ -81,7 +74,8 @@ deliveryJobSchema.pre<IDeliveryJob>('save', async function (next) {
                 { $inc: { seq: 1 } },
                 { new: true, upsert: true }
             );
-            this._id = 'JOB' + String(counter.seq).padStart(6, '0');
+            // เปลี่ยน Prefix เป็น JOB ตาม Model ล่าสุด
+            this._id = 'JOB' + String(counter.seq).padStart(6, '0'); 
             next();
         } catch (error: any) {
             next(error);
@@ -92,3 +86,4 @@ deliveryJobSchema.pre<IDeliveryJob>('save', async function (next) {
 });
 
 export default mongoose.model<IDeliveryJob>('DeliveryJob', deliveryJobSchema);
+

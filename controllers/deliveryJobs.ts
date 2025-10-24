@@ -146,3 +146,26 @@ export const getJobDetails = async (req: Request, res: Response): Promise<void> 
     }
 };
 
+// --- ดึงรายการส่งของทั้งหมดของผู้ส่ง ---
+// GET /api/delivery-jobs/sender/:userId
+export const getSenderJobs = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { userId } = req.params;
+
+        const jobs = await DeliveryJob.find({ sender: userId })
+            .populate('receiver', 'name profileImage') // ดึงข้อมูลผู้รับ (ถ้ามี)
+            .populate('rider', 'name profileImage') // ดึงข้อมูลไรเดอร์ (ถ้ามี)
+            .populate('pickupAddressId') // ดึงข้อมูลที่อยู่ต้นทาง
+            .populate('dropoffAddressId') // ดึงข้อมูลที่อยู่ปลายทาง
+            .sort({ createdAt: -1 }); // เรียงจากใหม่สุด
+
+        res.status(200).json(jobs);
+
+    } catch (error: any) {
+        if (error instanceof mongoose.Error.CastError) {
+             res.status(400).json({ message: 'Invalid User ID format' });
+        } else {
+             res.status(500).json({ message: "Server error fetching sender jobs", error: error.message });
+        }
+    }
+};
