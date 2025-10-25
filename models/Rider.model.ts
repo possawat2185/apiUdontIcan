@@ -69,7 +69,7 @@ const RiderSchema: Schema = new Schema({
         }
     },
     currentJobId: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: 'DeliveryJob',
         default: null,
     },
