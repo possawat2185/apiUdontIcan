@@ -15,7 +15,7 @@ export interface IRider extends Document {
         type: 'Point';
         coordinates: [number, number];
     };
-    currentJobId?: mongoose.Schema.Types.ObjectId;
+    currentJobId?: String;
     createdAt: Date; // Mongoose จะสร้างให้จาก timestamps
     updatedAt: Date; // Mongoose จะสร้างให้จาก timestamps
 }
