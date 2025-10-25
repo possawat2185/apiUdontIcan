@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { createAddress, getUserAddresses } from '../controllers/address';
+import { createAddress, getAddressById, getUserAddresses } from '../controllers/address';
+import { get } from 'http';
 
 export const router = Router();
 
@@ -11,7 +12,9 @@ router.post('/', createAddress);
 // GET /api/addresses/user/:userId
 router.get('/user/:userId', getUserAddresses);
 
+//GET /api/addresses/:addressId (ดึงที่อยู่เดียว)
+router.get('/:addressId', getAddressById);
 // --- สามารถเพิ่ม Endpoints อื่นๆ ที่นี่ได้ ---
-// เช่น GET /api/addresses/:addressId (ดึงที่อยู่เดียว)
+// เช่น 
 //     PUT /api/addresses/:addressId (แก้ไขที่อยู่)
 //     DELETE /api/addresses/:addressId (ลบที่อยู่ - ต้องอัปเดต User.addresses ด้วย)

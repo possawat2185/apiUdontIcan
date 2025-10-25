@@ -1,6 +1,7 @@
 // controllers/users.controller.ts
 import { Request, Response } from "express";
 import User, { IUser } from "../models/User.model";
+import mongoose from "mongoose";
 
 // @desc    Get all users
 // @route   GET /api/users
@@ -30,6 +31,36 @@ export const getUserById = async (
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
+};
+
+// @desc    Get single user by Phone Number
+// @route   GET /api/users/phone/:phone
+export const getUserByPhone = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const userPhone = req.params.phone;
+        if (!userPhone) {
+             res.status(400).json({ message: 'Phone number is required in URL parameter' });
+             return;
+        }
+
+        // ค้นหา User จากเบอร์โทร และ populate ที่อยู่
+        const user: IUser | null = await User.findOne({ phone: userPhone })
+                                            .select('-password')
+                                            .populate('addresses');
+
+        if (user) {
+            res.status(200).json(user);
+        } else {
+            res.status(404).json({ message: "User with this phone number not found" });
+        }
+    } catch (error: any) {
+         // ไม่น่าจะมี CastError ที่นี่ แต่ใส่เผื่อ
+         if (error instanceof mongoose.Error.CastError) {
+             res.status(400).json({ message: 'Invalid parameter format' }); // อาจจะไม่เกิด
+        } else {
+             res.status(500).json({ message: "Server error fetching user by phone", error: error.message });
+        }
+    }
 };
 
 // @desc    Create a new user (ปรับปรุงให้ตรงกับ Model)

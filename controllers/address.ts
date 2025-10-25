@@ -60,6 +60,8 @@ export const createAddress = async (req: Request, res: Response): Promise<void> 
     }
 };
 
+
+
 // --- ดึงที่อยู่ทั้งหมดของ User คนเดียว ---
 // GET /api/addresses/user/:userId
 export const getUserAddresses = async (req: Request, res: Response): Promise<void> => {
@@ -83,3 +85,40 @@ export const getUserAddresses = async (req: Request, res: Response): Promise<voi
     }
 };
 
+// --- ดึงที่อยู่เดียวด้วย Address ID ---
+// GET /api/addresses/:addressId
+export const getAddressById = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { addressId } = req.params;
+
+        // --- เพิ่มการตรวจสอบ addressId ---
+        if (!addressId) {
+            res.status(400).json({ message: "Address ID is required in the URL parameters" });
+            return;
+        }
+
+        // ตรวจสอบ Format ของ ObjectId ก่อน Query
+        if (!mongoose.Types.ObjectId.isValid(addressId)) {
+            res.status(400).json({ message: "Invalid Address ID format" });
+            return;
+        }
+
+        const address = await Address.findById(addressId).populate('user', 'name phone'); // Populate ข้อมูล User บางส่วน
+
+        if (!address) {
+            res.status(404).json({ message: "Address not found" });
+            return;
+        }
+
+        res.status(200).json(address);
+
+    } catch (error: any) {
+        // CastError ไม่ควรเกิดขึ้นแล้วเพราะเช็ค isValid ก่อนหน้า แต่ใส่ไว้เผื่อ
+         if (error instanceof mongoose.Error.CastError) {
+             // This case might be redundant now due to the isValid check above, but kept for safety.
+             res.status(400).json({ message: 'Invalid Address ID format' });
+        } else {
+             res.status(500).json({ message: "Server error fetching address", error: error.message });
+        }
+    }
+};
